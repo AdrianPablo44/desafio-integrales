@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Integración Numérica en IA y Robótica</title>
+<style>
+:root{--bg:#fff;--fg:#1d2433;--mut:#5b6577;--card:#f4f6fb;--bd:#d6dce9;--ac:#2456d6;--ok:#0d8a5a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161f;--fg:#e6eaf3;--mut:#9aa5bb;--card:#1b2130;--bd:#2c3550;--ac:#6f9bff;--ok:#4cd39b}}
+:root[data-theme="dark"]{--bg:#12161f;--fg:#e6eaf3;--mut:#9aa5bb;--card:#1b2130;--bd:#2c3550;--ac:#6f9bff;--ok:#4cd39b}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:16px}
+h1{font-size:1.4rem;margin:.2em 0}h2{font-size:1.2rem;margin:.6em 0}h3{font-size:1rem;margin:1.1em 0 .4em;color:var(--ac)}
+.sub{color:var(--mut);margin:0 0 12px}
+nav{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+nav button{border:1px solid var(--bd);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 10px;cursor:pointer;font:inherit;font-size:.85rem}
+nav button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin:8px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+label{display:flex;flex-direction:column;font-size:.8rem;color:var(--mut);gap:3px}.wide{grid-column:1/-1}
+input,select,textarea{font:inherit;padding:6px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--fg)}
+.card>button{margin-top:10px;padding:6px 12px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--fg);cursor:pointer}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.85rem;font-variant-numeric:tabular-nums}
+th,td{border-bottom:1px solid var(--bd);padding:5px 8px;text-align:right;white-space:nowrap}th{background:var(--card);color:var(--mut)}td:first-child,th:first-child{text-align:left}
+.ch{position:relative;height:300px}.err{color:#d33}.note{color:var(--mut);font-size:.85rem}
+mjx-container{max-width:100%;overflow-x:auto;overflow-y:hidden}
+</style>
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]}};</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
+</head><body><main>
+<h1>Integración numérica aplicada a IA y robótica</h1>
+<h3>Integrantes:</h3>
+<h4>Calizaya Aguilar Adrian Pablo  DAT-242 Ejercicios 19, 20, 21</h4>
+<h4>Javier Marco Garzón Canedo DAT-242 Ejercicios 22, 23, 24</h4>
+<h4>Eddy Anselmo Ramos Ocampo DAT-242 Ejercicios 25, 26, 27</h4>
+
+<p class="sub">Trapecio compuesto, Simpson 1/3 y Simpson 3/8 · Ejercicios 19 al 27. Modifica cualquier entrada y todo se recalcula.</p>
+<nav id="nav"></nav><section id="sec"></section>
+<script>
+const R=String.raw,PI=Math.PI,E=Math.exp,$=i=>document.getElementById(i),q=x=>+(+x).toFixed(4);
+const fmt=v=>v==null||!isFinite(v)?'—':Math.abs(v)>=1e6?v.toLocaleString('en-US',{maximumFractionDigits:0}):v.toFixed(6);
+const fe=v=>v==null?'—':(v>0&&v<1e-4?v.toExponential(2):v.toFixed(4))+' %';
+const T26="40,18\n60,32\n80,28\n100,30\n120,40\n140,38\n160,42\n180,45\n200,50\n220,40\n240,28\n260,12";
+const T27="0,0\n1,2.6\n2,3.2\n3,4.8\n4,5.6\n5,6.0\n6,6.2\n7,6.0\n8,5.6\n9,4.8\n10,3.3\n11,2.6\n12,0";
+const EX=[
+{n:19,name:'Navegación de un vehículo autónomo',u:'m',xl:'Tiempo t (s)',yl:'v(t) (m/s)',a:0,b:6,n0:12,
+ P:[{k:'A',l:'A (m/s)',v:20},{k:'k',l:'k (1/s)',v:0.5},{k:'B',l:'B (m/s)',v:2}],
+ f:(x,p)=>p.A*(1-E(-p.k*x))+p.B*Math.sin(x),F:(x,p)=>p.A*x+p.A/p.k*E(-p.k*x)-p.B*Math.cos(x),
+ d:R`Un AGV guiado por IA mide su velocidad con LiDAR y odometría. La distancia recorrida es la integral de la velocidad \(v(t)\) en el intervalo de prueba.`,
+ tex:(p,a,b)=>R`D=\int_{${a}}^{${b}}\left[${p.A}\left(1-e^{-${p.k}t}\right)+${p.B}\sin t\right]dt \\ \int v\,dt=${p.A}t+${q(p.A/p.k)}e^{-${p.k}t}-${p.B}\cos t`,
+ msg:(I,p,a,b)=>`El vehículo recorre ≈ ${fmt(I)} m entre t=${a} y t=${b} s (velocidad media ${fmt(I/(b-a))} m/s). La velocidad tiende a ${p.A} m/s y la componente senoidal solo aporta una corrección pequeña a la distancia total.`},
+{n:20,name:'Trabajo mecánico en un brazo robótico quirúrgico',u:'N·cm',xl:'Desplazamiento x (cm)',yl:'F(x) (N)',a:0,b:6,n0:12,
+ P:[{k:'A',l:'A (N)',v:5},{k:'k',l:'k (1/cm)',v:0.8},{k:'c',l:'c (N/cm)',v:0.5}],
+ f:(x,p)=>p.A*(1-E(-p.k*x))+p.c*x,F:(x,p)=>p.A*x+p.A/p.k*E(-p.k*x)+p.c*x*x/2,
+ d:R`Un brazo robótico controlado por una red neuronal aplica una fuerza variable \(F(x)\) sobre tejido blando. El trabajo mecánico es el área bajo la curva fuerza–desplazamiento.`,
+ tex:(p,a,b)=>R`W=\int_{${a}}^{${b}}\left[${p.A}\left(1-e^{-${p.k}x}\right)+${p.c}x\right]dx \\ \int F\,dx=${p.A}x+${q(p.A/p.k)}e^{-${p.k}x}+${q(p.c/2)}x^2`,
+ msg:(I,p,a,b)=>`El actuador realiza ≈ ${fmt(I)} N·cm de trabajo (≈ ${(I/100).toPrecision(4)} J), con una fuerza media de ${fmt(I/(b-a))} N. La curva es suave y creciente, por eso Simpson converge mucho más rápido que el trapecio.`},
+{n:21,name:'Inspección topográfica por visión por computadora',u:'mm²',xl:'Posición x (mm)',yl:'g(x) (mm)',a:0,b:6,n0:12,
+ P:[{k:'c0',l:'c₀ (mm)',v:2},{k:'A',l:'A (mm)',v:3},{k:'k',l:'k (1/mm)',v:0.8},{k:'s',l:'s (pendiente)',v:0.5}],
+ f:(x,p)=>p.c0+p.A*Math.sin(p.k*x)**2+p.s*x,F:(x,p)=>p.c0*x+p.A*(x/2-Math.sin(2*p.k*x)/(4*p.k))+p.s*x*x/2,
+ d:R`Un sensor LiDAR escanea una oblea de silicio. El perfil del defecto \(g(x)\) se integra para obtener el área de su sección transversal.`,
+ tex:(p,a,b)=>R`A=\int_{${a}}^{${b}}\left[${p.c0}+${p.A}\sin^2(${p.k}x)+${p.s}x\right]dx \\ \int g\,dx=${p.c0}x+${p.A}\left(\tfrac{x}{2}-\tfrac{\sin(${q(2*p.k)}x)}{${q(4*p.k)}}\right)+${q(p.s/2)}x^2`,
+ msg:(I,p,a,b)=>`La sección del defecto tiene ≈ ${fmt(I)} mm² (altura media ${fmt(I/(b-a))} mm). El perfil oscila por el término sen², así que con pocos puntos el trapecio falla en los máximos y mínimos locales; Simpson los sigue mejor.`},
+{n:22,name:'Cable suspendido (catenaria)',u:'ft',xl:'x (ft)',yl:'cosh(x/c)',a:-12,b:26,n0:12,
+ P:[{k:'c',l:'a de la catenaria (ft)',v:24}],
+ f:(x,p)=>Math.cosh(x/p.c),F:(x,p)=>p.c*Math.sinh(x/p.c),
+ d:R`Un cable colgado bajo su propio peso adopta la catenaria \(y=a\cosh(x/a)\). Su longitud de arco usa \(\sqrt{1+\sinh^2 u}=\cosh u\).`,
+ tex:(p,a,b)=>R`L=\int_{${a}}^{${b}}\sqrt{1+[y'(x)]^2}\,dx=\int_{${a}}^{${b}}\cosh\!\left(\tfrac{x}{${p.c}}\right)dx=${p.c}\left[\sinh\tfrac{${b}}{${p.c}}-\sinh\tfrac{${a}}{${p.c}}\right]`,
+ msg:(I,p,a,b)=>`El cable mide ≈ ${fmt(I)} ft, ${fmt(I-(b-a))} ft más que la distancia horizontal entre apoyos (${b-a} ft): es la holgura de la catenaria. El integrando es muy suave, por lo que Simpson alcanza errores casi nulos.`},
+{n:23,name:'Red de abastecimiento de agua (caudal)',u:'in³/s',xl:'Radio r (in)',yl:'2πr·v(r)',lock:p=>[0,p.R],n0:12,
+ P:[{k:'v0',l:'v₀ (in/s)',v:80},{k:'R',l:'Radio R (in)',v:0.25},{k:'m',l:'m (exponente 1/m)',v:7}],
+ f:(r,p)=>2*PI*r*p.v0*Math.pow(Math.max(1-r/p.R,0),1/p.m),I:p=>2*PI*p.v0*p.R**2*(p.m/(p.m+1)-p.m/(2*p.m+1)),
+ d:R`El caudal \(Q\) es el volumen de agua por unidad de tiempo que cruza la sección circular. Con perfil turbulento \(v(r)=v_0(1-r/R)^{1/m}\), se integra sobre el radio.`,
+ tex:(p)=>R`Q=\int_0^{${p.R}}2\pi r\,v(r)\,dr=\int_0^{${p.R}}2\pi r\cdot${p.v0}\left(1-\tfrac{r}{${p.R}}\right)^{1/${p.m}}dr=2\pi v_0R^2\left(\tfrac{m}{m+1}-\tfrac{m}{2m+1}\right)`,
+ msg:(I,p)=>`El caudal es ≈ ${fmt(I)} in³/s (velocidad media ${fmt(I/(PI*p.R*p.R))} in/s). Como v′(r)→∞ en la pared (r=R), el integrando no es suave allí: la convergencia es lenta y los errores son mucho mayores que en los otros ejercicios. Aumenta n para verlo mejorar.`},
+{n:24,name:'Trayectoria en cardioide paramétrica',u:'u',xl:'t (rad)',yl:'rapidez 4b·sen(t/2)',lock:p=>[0,2*PI],n0:12,
+ P:[{k:'c',l:'b',v:5}],
+ f:(t,p)=>4*p.c*Math.sin(t/2),I:p=>16*p.c,
+ d:R`Un robot sigue una trayectoria en forma de cardioide. Su perímetro es la integral de la rapidez paramétrica \(\sqrt{x'^2+y'^2}\) en \(t\in[0,2\pi]\).`,
+ tex:(p)=>R`x=${2*p.c}\cos t-${p.c}\cos 2t,\quad y=${2*p.c}\sin t-${p.c}\sin 2t \\ L=\int_0^{2\pi}\sqrt{x'^2+y'^2}\,dt=\int_0^{2\pi}${4*p.c}\sin\tfrac{t}{2}\,dt=${16*p.c}`,
+ msg:(I)=>`El perímetro de la trayectoria es ≈ ${fmt(I)} unidades de longitud (exacto 16b). El integrando se anula en los extremos del intervalo; Simpson reduce el error frente al trapecio en más de un orden de magnitud con los mismos puntos.`},
+{n:25,name:'Cambio de energía potencial de un satélite',u:'J',xl:'Altitud y (m)',yl:'f(y) (N)',a:0,b:800000,n0:4,
+ P:[{k:'m',l:'Masa m (kg)',v:500},{k:'R',l:'Radio terrestre R (m)',v:6371000},{k:'g0',l:'g₀ (m/s²)',v:9.81}],
+ f:(y,p)=>p.m*p.g0*p.R**2/(p.R+y)**2,F:(y,p)=>-p.m*p.g0*p.R**2/(p.R+y),
+ d:R`Al elevar un satélite, la gravedad decae como \(g(y)=g_0R^2/(R+y)^2\). La energía necesaria es la integral de la fuerza \(m\,g(y)\) sobre la altura.`,
+ tex:(p,a,b)=>R`\Delta U=\int_{${a}}^{${b}}\frac{m\,g_0R^2}{(R+y)^2}dy=mR^2g_0\left[\frac{1}{R+${a}}-\frac{1}{R+${b}}\right]`,
+ msg:(I,p,a,b)=>`Elevar el satélite ${fmt(b-a)} m requiere ≈ ${fmt(I)} J (${(I/1e9).toFixed(4)} GJ). Con g constante serían ${fmt(p.m*p.g0*(b-a))} J: la caída de g con la altura reduce la energía en ${(100*(1-I/(p.m*p.g0*(b-a)))).toFixed(2)} %. La curva es casi recta, por lo que el error es pequeño aun con pocos tramos.`},
+{n:26,name:'Área del lago Erie (datos discretos)',u:'millas²',xl:'Distancia x (millas)',yl:'Ancho w(x) (millas)',tab:1,comb:1,data:T26,
+ P:[{k:'ref',l:'Área real de referencia (millas²)',v:9940}],map:r=>r.map(([x,y])=>({x,y})),
+ d:R`No existe función analítica: se miden anchos \(w(x_i)\) del lago cada 20 millas y el área es \(A=\int w(x)\,dx\). Con 11 intervalos (impar), Simpson 1/3 se combina con un trapecio en el último.`,
+ tex:()=>R`A\approx\int_{40}^{260}w(x)\,dx`,
+ msg:(I)=>`El área estimada es ≈ ${fmt(I)} millas². Las reglas difieren poco entre sí, pero todas quedan lejos de la referencia: el error dominante proviene de los datos (el muestreo solo cubre una parte del lago y los anchos son irregulares), no del método de integración.`},
+{n:27,name:'Volumen y área de un balón de fútbol',tab:1,data:T27,xl:'Eje z (pulg)',yl:'Valor del integrando',
+ u:p=>p.q=='V'?'pulg³':'pulg²',
+ P:[{k:'q',l:'Magnitud',v:'V',opts:[['V','Volumen V'],['S','Superficie S']]},{k:'ref',l:'Referencia opcional (vacío = Simpson 1/3)',v:''}],
+ map:(r,p)=>r.map(([z,d])=>({x:z,y:p.q=='V'?PI*(d/2)**2:PI*d})),
+ d:R`El balón se mide con diámetros \(d_i\) cada pulgada (\(r=d/2\)). Se integra por rebanadas: \(V=\pi\int r^2dz\) y \(S\approx2\pi\int r\,dz\).`,
+ tex:(p)=>p.q=='V'?R`V=\pi\int_0^{12}r(z)^2\,dz`:R`S\approx2\pi\int_0^{12}r(z)\,dz`,
+ msg:(I,p)=>`La magnitud calculada es ≈ ${fmt(I)} ${p.q=='V'?'pulg³':'pulg²'}. Sin función analítica, el error se mide contra la referencia o Simpson 1/3. Es el mismo principio con que una IA médica suma cortes de resonancia para obtener volúmenes. Nota: \\(S=2\\pi\\int r\\,dz\\) ignora la pendiente del perfil y subestima la superficie real.`}
+];
+let cur=0,ch=null;
+function calc(xs,ys,comb){const n=xs.length-1,h=(xs[n]-xs[0])/n;let T=ys[0]+ys[n];for(let i=1;i<n;i++)T+=2*ys[i];T*=h/2;
+ const s13=m=>{let s=ys[0]+ys[m];for(let i=1;i<m;i++)s+=(i%2?4:2)*ys[i];return h/3*s};
+ let S1=null,S3=null;if(n%2==0)S1=s13(n);else if(comb&&n>1)S1=s13(n-1)+h/2*(ys[n-1]+ys[n]);
+ if(n%3==0){let s=ys[0]+ys[n];for(let i=1;i<n;i++)s+=(i%3?3:2)*ys[i];S3=3*h/8*s}
+ return{n,h,T,S1,S3}}
+function build(i){cur=i;const ex=EX[i];
+ let h=`<h2>Ejercicio ${ex.n} · ${ex.name}</h2><div class="card"><div class="grid">`;
+ ex.P.forEach(o=>h+=`<label>${o.l}${o.opts?`<select id="p_${o.k}">${o.opts.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('')}</select>`:`<input id="p_${o.k}" value="${o.v}">`}</label>`);
+ if(!ex.tab){if(!ex.lock)h+=`<label>a (límite inferior)<input id="a" value="${ex.a}"></label><label>b (límite superior)<input id="b" value="${ex.b}"></label>`;
+  h+=`<label>n (subintervalos)<input id="n" type="number" min="1" value="${ex.n0}"></label>`}
+ else h+=`<label class="wide">Datos (x, y por línea; paso uniforme)<textarea id="tx" rows="7">${ex.data}</textarea></label>`;
+ $('sec').innerHTML=h+`</div><button onclick="build(cur)">Restablecer valores</button></div><div id="out"></div>`;
+ $('sec').querySelectorAll('input,select,textarea').forEach(e=>e.oninput=run);
+ document.querySelectorAll('#nav button').forEach((b,j)=>b.className=j==i?'on':'');run()}
+function run(){const ex=EX[cur],out=$('out'),p={};
+ ex.P.forEach(o=>{const e=$('p_'+o.k);p[o.k]=o.opts?e.value:parseFloat(e.value)});
+ let xs=[],ys=[],a,b,n;
+ if(ex.tab){const rows=$('tx').value.split('\n').map(l=>l.trim().split(/[\s,;]+/).map(Number)).filter(r=>r.length>=2&&r.every(isFinite));
+  const pts=ex.map(rows,p);xs=pts.map(o=>o.x);ys=pts.map(o=>o.y);
+  if(xs.length<3){out.innerHTML='<p class="err">Ingresa al menos 3 puntos.</p>';return}
+  a=xs[0];b=xs[xs.length-1];const h0=xs[1]-xs[0];
+  if(xs.some((x,i)=>i&&Math.abs(x-xs[i-1]-h0)>1e-9*Math.abs(h0))||h0<=0){out.innerHTML='<p class="err">Los puntos x deben ser crecientes con paso uniforme.</p>';return}}
+ else{[a,b]=ex.lock?ex.lock(p):[parseFloat($('a').value),parseFloat($('b').value)];n=parseInt($('n').value);
+  if(!(n>=1)||!(b>a)||ex.P.some(o=>!o.opts&&!isFinite(p[o.k]))){out.innerHTML='<p class="err">Revisa los datos: n ≥ 1, a &lt; b y parámetros numéricos.</p>';return}
+  const h=(b-a)/n;for(let i=0;i<=n;i++){xs.push(a+i*h);ys.push(ex.f(xs[i],p))}}
+ const M=calc(xs,ys,ex.comb),U=typeof ex.u=='function'?ex.u(p):ex.u;
+ let ref=null,rl='Solución real (exacta)';
+ if(ex.tab){if(isFinite(p.ref)){ref=p.ref;rl='Valor de referencia'}else{ref=M.S1;rl='Referencia (Simpson 1/3)'}}
+ else ref=ex.I?ex.I(p,a,b):ex.F(b,p)-ex.F(a,p);
+ const er=v=>v==null||ref==null?null:Math.abs(v-ref)/Math.abs(ref)*100;
+ const rows=[['Trapecio compuesto',M.T],['Simpson 1/3 compuesto'+(ex.comb&&M.n%2?' (combinado)':''),M.S1],['Simpson 3/8 compuesto',M.S3]];
+ let r=`<h3>Planteamiento</h3><p>${ex.d}</p>\\[${ex.tex(p,q(a),q(b))}\\]<h3>Resultados (n = ${M.n}, h = ${+M.h.toFixed(6)})</h3><div class="tw"><table><tr><th>Método</th><th>Valor (${U})</th><th>Error absoluto</th><th>Error relativo %</th></tr><tr><td>${rl}</td><td>${fmt(ref)}</td><td>—</td><td>0 %</td></tr>`;
+ rows.forEach(([nm,v])=>r+=`<tr><td>${nm}</td><td>${v==null?'no aplica':fmt(v)}</td><td>${v==null||ref==null?'—':fmt(Math.abs(v-ref))}</td><td>${fe(er(v))}</td></tr>`);
+ r+='</table></div>';
+ if(M.S1==null)r+='<p class="note">Simpson 1/3 requiere n par.</p>';if(M.S3==null)r+='<p class="note">Simpson 3/8 requiere n múltiplo de 3.</p>';
+ r+=`<h3>Gráfico</h3><div class="ch"><canvas id="cv"></canvas></div><h3>Tabla de iteraciones</h3><div class="tw"><table><tr><th>i</th><th>x<sub>i</sub></th><th>f(x<sub>i</sub>)</th><th>Peso trapecio (×h/2)</th><th>Peso S 1/3 (×h/3)</th><th>Peso S 3/8 (×3h/8)</th></tr>`;
+ const n2=M.n,odd=n2%2==1&&ex.comb&&n2>1;
+ xs.forEach((x,i)=>{const wt=i==0||i==n2?1:2;let w1='—';
+  if(n2%2==0)w1=i==0||i==n2?1:i%2?4:2;else if(odd){const m=n2-1;w1=i==n2?'1 (T)':i==0?1:i==m?'1 (S) + 1 (T)':i%2?4:2}
+  const w3=n2%3==0?(i==0||i==n2?1:i%3?3:2):'—';
+  r+=`<tr><td>${i}</td><td>${+x.toFixed(6)}</td><td>${ys[i].toFixed(6)}</td><td>${wt}</td><td>${w1}</td><td>${w3}</td></tr>`});
+ r+='</table></div>';
+ const av=rows.filter(o=>o[1]!=null&&ref!=null&&!(ex.tab&&!isFinite(p.ref)&&o[1]===M.S1)).map(o=>[o[0],er(o[1])]).sort((x,y)=>x[1]-y[1]);
+ r+='<h3>Interpretación del resultado</h3><p>';
+ if(av.length)r+=`El método más preciso fue <b>${av[0][0]}</b> (error ${fe(av[0][1])}). `;
+ if(M.S1!=null&&ref!=null&&!ex.tab&&er(M.S1)>0)r+=`Simpson 1/3 reduce el error del trapecio unas ${(er(M.T)/er(M.S1)).toFixed(1)} veces. `;
+ r+=ex.msg(ref!=null?ref:M.T,p,q(a),q(b))+'</p>';
+ out.innerHTML=r;
+ const st=getComputedStyle(document.documentElement),fg=st.getPropertyValue('--mut').trim()||'#666',gr=st.getPropertyValue('--bd').trim()||'#ddd',ac=st.getPropertyValue('--ac').trim()||'#2456d6';
+ let cv=[];if(ex.tab)cv=xs.map((x,i)=>({x,y:ys[i]}));else for(let i=0;i<=200;i++){const x=a+(b-a)*i/200;cv.push({x,y:ex.f(x,p)})}
+ if(ch)ch.destroy();
+ ch=new Chart($('cv'),{type:'line',data:{datasets:[{label:'Función',data:cv,borderColor:ac,backgroundColor:ac+'33',fill:'origin',pointRadius:0,borderWidth:2},{label:'Puntos discretos',data:xs.map((x,i)=>({x,y:ys[i]})),showLine:false,borderColor:'#e0392b',backgroundColor:'#e0392b',pointRadius:4}]},
+  options:{responsive:true,maintainAspectRatio:false,animation:false,parsing:false,plugins:{legend:{labels:{color:fg}}},
+   scales:{x:{type:'linear',title:{display:true,text:ex.xl||'x',color:fg},ticks:{color:fg},grid:{color:gr}},y:{title:{display:true,text:ex.yl||'f(x)',color:fg},ticks:{color:fg},grid:{color:gr}}}}});
+ if(window.MathJax&&MathJax.typesetPromise)MathJax.typesetPromise([out]).catch(()=>{})}
+EX.forEach((e,i)=>{const b=document.createElement('button');b.textContent=e.n;b.title=e.name;b.onclick=()=>build(i);$('nav').appendChild(b)});
+build(0);
+</script></main></body></html>
